@@ -1,0 +1,21 @@
+INSTRUCTIONS TO REPRODUCE FIG. 3 OF THE PAPER
+
+-Compile
+
+within the submitted repository, run the following commands in the terminal:
+
+mkdir build
+cd build 
+cmake ../
+make 
+
+This will create a repository "bin" containing the executable.
+
+-Run 
+within the submitted repository, run the following command in the terminal:
+
+./bin/splinetest data/bunny.obj
+
+This will open a GUI with the bunny mesh with the Bézier curve in Fig.3 already drawn on it.
+
+To use the GUI in its general implementation, please refer to the README file in this repository.

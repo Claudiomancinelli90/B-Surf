@@ -1,0 +1,13 @@
+bin
+cmake
+build
+data
+cmake-build-debug
+cmake-build-release
+.idea
+.vscode/.cmaketools.json
+*.hdr
+*.exr
+*.png
+.vscode/ipch/
+

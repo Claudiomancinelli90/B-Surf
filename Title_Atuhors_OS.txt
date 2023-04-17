@@ -1,0 +1,5 @@
+Submission title: "b/Surf: Interactive Bézier Splines on Surface Meshes"
+
+Authors: Claudio Mancinelli, Giacomo Nazzaro, Fabio Pellacini and Enrico Puppo
+
+OS: MacOs
