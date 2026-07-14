@@ -1017,6 +1017,8 @@ void clear_framebuffer(ogl_framebuffer* framebuffer) {
   assert_ogl_error();
 }
 
+ogl_shape::ogl_shape() = default;
+
 ogl_shape::~ogl_shape() {
   for (auto buffer : vertex_buffers) delete buffer;
   delete index_buffer;

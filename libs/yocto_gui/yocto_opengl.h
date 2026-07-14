@@ -409,7 +409,7 @@ struct ogl_shape {
   uint shape_id = 0;
 
   // Disable copy construction
-  ogl_shape()                 = default;
+  ogl_shape();
   ogl_shape(const ogl_shape&) = delete;
   ogl_shape& operator=(const ogl_shape&) = delete;
 

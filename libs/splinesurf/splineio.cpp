@@ -80,6 +80,16 @@ bool save_bezier_params(const string& filename,
 #define HEAVY 1
 #if HEAVY
 #include "karcher.h"
+
+static bool has_boundary_edges(const vector<vec3i>& adjacencies) {
+  for (auto& adjacency : adjacencies) {
+    for (auto k = 0; k < 3; ++k) {
+      if (adjacency[k] < 0) return true;
+    }
+  }
+  return false;
+}
+
 void init_mesh(bezier_mesh& mesh, bool with_opposite) {
   mesh.v2t = vertex_to_triangles(
       mesh.triangles, mesh.positions, mesh.adjacencies);
@@ -170,7 +180,12 @@ bool load_mesh(const string& filename, bezier_mesh& mesh, string& error) {
   mesh.dual_solver = make_dual_geodesic_solver(
       mesh.triangles, mesh.positions, mesh.adjacencies);
 #if HEAVY
-  init_mesh(mesh, true);
+  auto has_boundary = has_boundary_edges(mesh.adjacencies);
+  if (has_boundary) {
+    printf("%s: mesh has boundary, using boundary-safe initialization\n",
+        __FUNCTION__);
+  }
+  init_mesh(mesh, !has_boundary);
 #endif
   return true;
 }

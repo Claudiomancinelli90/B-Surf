@@ -393,6 +393,7 @@ int opposite_face(const vector<vec3i> &triangles,
     const vector<vec3i> &adjacencies, int t, int vid) {
   auto triangle = adjacencies[t];
   for (auto i = 0; i < 3; ++i) {
+    if (triangle[i] < 0) continue;
     if (find_in_vec(triangles[triangle[i]], vid) < 0) return triangle[i];
   }
   return -1;
@@ -808,12 +809,15 @@ geodesic_solver make_geodesic_solver(const vector<vec3i> &triangles,
       auto e      = positions[p] - vert;
       solver.graph[i].push_back({p, length(e)});
       auto opp   = opposite_face(triangles, adjacencies, tid, i);
+      if (opp < 0) continue;
       auto strip = vector<int>{tid, opp};
       auto k     = find_in_vec(adjacencies[tid],
               opp);  // TODO(fabio): this is not needeed
-      assert(k != -1);
+      if (k < 0) continue;
       auto a       = opposite_vertex(triangles, adjacencies, tid, k);
+      if (a < 0) continue;
       offset       = find_in_vec(triangles[opp], a);
+      if (offset < 0) continue;
       auto bary    = zero3f;
       bary[offset] = 1;
       auto l       = length_by_flattening(
@@ -845,6 +849,16 @@ vector<vector<float>> compute_angles(const vector<vec3i> &triangles,
       if (with_opposite) {
         auto opp    = opposite_face(triangles, adjacencies, tid, i);
         auto k      = find_in_vec(adjacencies[tid], opp);
+        if (opp < 0 || k < 0) {
+          auto h = find_in_vec(triangles[tid], i);
+          if (h < 0) continue;
+          auto v = positions[tr3d[(h + 1) % 3]] - positions[tr3d[h]];
+          auto w = positions[tr3d[(h + 2) % 3]] - positions[tr3d[h]];
+          auto a = angle(v, w);
+          curr_angles.push_back(a);
+          theta += a;
+          continue;
+        }
         tr2d        = init_flat_triangle(positions, tr3d);
         auto tr_opp = unfold_face(
             triangles, positions, adjacencies, tr2d, tid, k);
@@ -872,17 +886,21 @@ vector<vector<float>> compute_angles(const vector<vec3i> &triangles,
         // }
       } else {
         auto k = find_in_vec(triangles[tid], i);
+        if (k < 0) continue;
         auto v = positions[tr3d[(k + 1) % 3]] - positions[tr3d[k]];
         auto w = positions[tr3d[(k + 2) % 3]] - positions[tr3d[k]];
-        theta += angle(v, w);
+        auto a = angle(v, w);
+        curr_angles.push_back(a);
+        theta += a;
       }
     }
 
+    if (theta <= 0 || curr_angles.empty()) continue;
     auto scale_factor = 2 * pif / theta;
     total_angles[i]   = theta;
     angles[i].push_back(0);
     theta = 0;
-    for (auto j = 0; j < curr_angles.size() - 1; ++j) {
+    for (auto j = (size_t)0; j + 1 < curr_angles.size(); ++j) {
       auto curr_angle = curr_angles[j] * scale_factor;
       theta += curr_angle;
       angles[i].push_back(theta);

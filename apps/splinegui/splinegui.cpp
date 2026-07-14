@@ -1922,11 +1922,12 @@ int main(int num_args, const char* args[]) {
   bool   quiet      = false;
   bool   log_colors = true;
   string playback   = "";
+  string startup_test = "";
   int    msaa       = 1;
 
   auto cli = make_cli("bezier", "interactive viewer for mesh processing");
   add_option(cli, "mesh", app.filename, "Model filenames", true);
-  add_option(cli, "--test", app.testname, "Test filename", false);
+  add_option(cli, "--test", startup_test, "Test filename", false);
   add_option(cli, "--time/--no-time", time, "Log times");
   add_option(cli, "--info/--no-info", infolog, "Log info");
   add_option(cli, "--envlight", app.envlight, "Enable environmental lighting");
@@ -1954,57 +1955,61 @@ int main(int num_args, const char* args[]) {
   init_gpu(app, app.envlight);
 
   init_widget(app.widget, win);
-  // GRSI input, comment for general use from here
-  load_editing(app, app.testname);
+  if (!startup_test.empty()) {
+    app.testname = startup_test;
+    if (load_editing(app, app.testname)) {
+      app.show_points = false;
+      if (app.added_paths.size() != 0) {
+        for (auto& path : app.added_paths) {
+          clear_shape(path->instance->shape);
+        }
+        for (auto& points : app.added_points) {
+          clear_shape(points->instance->shape);
+        }
 
-  app.show_points = false;
-  if (app.added_paths.size() != 0) {
-    for (auto& path : app.added_paths) {
-      clear_shape(path->instance->shape);
-    }
-    for (auto& points : app.added_points) {
-      clear_shape(points->instance->shape);
-    }
-
-    app.added_paths.clear();
-    app.added_points.clear();
-  }
-  for (auto& spline : app.splines()) {
-    for (auto i = 0; i < spline.curves.size(); ++i) {
-      auto polygon = get_control_polygon(spline, i);
-      // auto p0              = curve.tangents[0].path.start;
-      // auto p1              = curve.tangents[0].path.end;
-      // auto p2              = curve.tangents[1].path.end;
-      // auto p3              = curve.tangents[1].path.start;
-      auto rgb = hsv_to_rgb({app.control_polygon_h / 360.f,
-          app.control_polygon_s / 100.f, app.control_polygon_v / 100.f});
-      if (!app.quadric_curve) {
-        auto control_polygon = add_points_shape(app,
-            {polygon[0], polygon[1], polygon[2], polygon[3]},
-            0.003f * app.line_size, rgb);
-        auto L0 = compute_geodesic_path(app.mesh, polygon[0], polygon[1]);
-        auto L1 = compute_geodesic_path(app.mesh, polygon[1], polygon[2]);
-        auto L2 = compute_geodesic_path(app.mesh, polygon[2], polygon[3]);
-        if (!point_are_close(L0.start, L0.end))
-          auto L0_curve = add_path_shape(app, L0, 0.0015f * app.line_size, rgb);
-        if (!point_are_close(L1.start, L1.end))
-          auto L1_curve = add_path_shape(app, L1, 0.0015f * app.line_size, rgb);
-        if (!point_are_close(L2.start, L2.end))
-          auto L2_curve = add_path_shape(app, L2, 0.0015f * app.line_size, rgb);
-      } else {
-        auto control_polygon = add_points_shape(app,
-            {polygon[0], polygon[1], polygon[3]}, 0.003f * app.line_size, rgb);
-        auto L0 = compute_geodesic_path(app.mesh, polygon[0], polygon[1]);
-        auto L1 = compute_geodesic_path(app.mesh, polygon[1], polygon[3]);
-        if (!point_are_close(L0.start, L0.end))
-          auto L0_curve = add_path_shape(app, L0, 0.0015f * app.line_size, rgb);
-        if (!point_are_close(L1.start, L1.end))
-          auto L1_curve = add_path_shape(app, L1, 0.0015f * app.line_size, rgb);
+        app.added_paths.clear();
+        app.added_points.clear();
       }
+      for (auto& spline : app.splines()) {
+        for (auto i = 0; i < spline.curves.size(); ++i) {
+          auto polygon = get_control_polygon(spline, i);
+          auto rgb = hsv_to_rgb({app.control_polygon_h / 360.f,
+              app.control_polygon_s / 100.f, app.control_polygon_v / 100.f});
+          if (!app.quadric_curve) {
+            auto control_polygon = add_points_shape(app,
+                {polygon[0], polygon[1], polygon[2], polygon[3]},
+                0.003f * app.line_size, rgb);
+            auto L0 = compute_geodesic_path(app.mesh, polygon[0], polygon[1]);
+            auto L1 = compute_geodesic_path(app.mesh, polygon[1], polygon[2]);
+            auto L2 = compute_geodesic_path(app.mesh, polygon[2], polygon[3]);
+            if (!point_are_close(L0.start, L0.end))
+              auto L0_curve = add_path_shape(
+                  app, L0, 0.0015f * app.line_size, rgb);
+            if (!point_are_close(L1.start, L1.end))
+              auto L1_curve = add_path_shape(
+                  app, L1, 0.0015f * app.line_size, rgb);
+            if (!point_are_close(L2.start, L2.end))
+              auto L2_curve = add_path_shape(
+                  app, L2, 0.0015f * app.line_size, rgb);
+          } else {
+            auto control_polygon =
+                add_points_shape(app, {polygon[0], polygon[1], polygon[3]},
+                    0.003f * app.line_size, rgb);
+            auto L0 = compute_geodesic_path(app.mesh, polygon[0], polygon[1]);
+            auto L1 = compute_geodesic_path(app.mesh, polygon[1], polygon[3]);
+            if (!point_are_close(L0.start, L0.end))
+              auto L0_curve = add_path_shape(
+                  app, L0, 0.0015f * app.line_size, rgb);
+            if (!point_are_close(L1.start, L1.end))
+              auto L1_curve = add_path_shape(
+                  app, L1, 0.0015f * app.line_size, rgb);
+          }
+        }
+      }
+    } else {
+      printf("warning: could not load test %s\n", app.testname.c_str());
     }
   }
-
-  // to here
 
   if (msaa > 1) set_ogl_msaa();
 

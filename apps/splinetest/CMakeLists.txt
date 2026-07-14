@@ -7,4 +7,4 @@ set_target_properties(splinetest     PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQ
 target_include_directories(splinetest    PUBLIC ${CMAKE_SOURCE_DIR}/libs)
 target_include_directories(splinetest PUBLIC ${CMAKE_SOURCE_DIR}/libs/geometry-central/include)
 
-target_link_libraries(splinetest yocto splinesurf yocto_gui realtime)
+target_link_libraries(splinetest splinesurf yocto_gui realtime)

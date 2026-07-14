@@ -7,4 +7,4 @@ set_target_properties(splinegui     PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQU
 target_include_directories(splinegui    PUBLIC ${CMAKE_SOURCE_DIR}/libs)
 target_include_directories(splinegui PUBLIC ${CMAKE_SOURCE_DIR}/libs/geometry-central/include)
 
-target_link_libraries(splinegui yocto splinesurf yocto_gui realtime)
+target_link_libraries(splinegui splinesurf yocto_gui realtime)

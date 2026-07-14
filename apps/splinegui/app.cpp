@@ -1009,8 +1009,26 @@ bool load_editing(App& app, const string& filename) {
   }
 
   try {
+    auto splines = js["splines"].get<vector<Gui_Spline>>();
+    for (auto spline_id = (size_t)0; spline_id < splines.size();
+         ++spline_id) {
+      const auto& spline = splines[spline_id];
+      for (auto point_id = (size_t)0; point_id < spline.control_points.size();
+           ++point_id) {
+        const auto& point = spline.control_points[point_id];
+        if (point.face < 0 || point.face >= app.mesh.triangles.size() ||
+            point.uv.x < 0 || point.uv.y < 0 || point.uv.x > 1 ||
+            point.uv.y > 1) {
+          printf("error loading json %s: control point %zu in spline %zu is "
+                 "not valid for mesh with %zu triangles\n",
+              filename.c_str(), point_id, spline_id, app.mesh.triangles.size());
+          return false;
+        }
+      }
+    }
+
     app.commit_state();
-    app.splines()          = js["splines"].get<vector<Gui_Spline>>();
+    app.splines()          = splines;
     app.camera->lens       = js["camera"]["lens"];
     app.camera->aspect     = js["camera"]["aspect"];
     app.camera->film       = js["camera"]["film"];
