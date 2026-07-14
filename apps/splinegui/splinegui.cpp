@@ -214,6 +214,80 @@ inline bool is_down(gui_button button) {
          button.state == gui_button::state::pressing;
 }
 
+static string format_float_literal(float value) {
+  char buffer[64];
+  snprintf(buffer, sizeof(buffer), "%.9g", value);
+  auto text = string{buffer};
+  if (text.find_first_of(".eE") == string::npos) text += ".0";
+  return text + "f";
+}
+
+static void append_mesh_point(vector<mesh_point>& points, const mesh_point& point) {
+  if (points.empty() || !point_are_close(points.back(), point)) {
+    points.push_back(point);
+  }
+}
+
+static vector<mesh_point> collect_current_spline_curve_points(const App& app) {
+  auto points = vector<mesh_point>{};
+  if (app.input().selected_spline < 0 ||
+      app.input().selected_spline >= app.splines().size()) {
+    return points;
+  }
+
+  auto& spline = app.spline();
+  for (auto curve_id = 0; curve_id < spline.curves.size(); ++curve_id) {
+    auto polygon = get_control_polygon(spline, curve_id);
+    append_mesh_point(points, polygon[0]);
+    for (auto& sample : spline.curves[curve_id].samples) {
+      append_mesh_point(points, sample);
+    }
+    append_mesh_point(points, polygon[3]);
+  }
+  return points;
+}
+
+static string format_mesh_point_vector(
+    const vector<mesh_point>& points, const string& variable_name) {
+  auto text = "vector<mesh_point> " + variable_name + " = {\n"s;
+  for (auto i = (size_t)0; i < points.size(); ++i) {
+    auto& point = points[i];
+    text += "    {" + std::to_string(point.face) + ", {" +
+            format_float_literal(point.uv.x) + ", " +
+            format_float_literal(point.uv.y) + "}}";
+    text += (i + 1 == points.size()) ? "\n" : ",\n";
+  }
+  text += "};\n";
+  return text;
+}
+
+static bool export_current_spline_curve(const App& app, const string& filename) {
+  if (app.input().selected_spline < 0 ||
+      app.input().selected_spline >= app.splines().size()) {
+    printf("warning: no current spline to export\n");
+    return false;
+  }
+
+  auto points = collect_current_spline_curve_points(app);
+  if (points.empty()) {
+    printf("warning: current spline curve has no samples to export\n");
+    return false;
+  }
+
+  auto error   = string{};
+  auto success = save_text(
+      filename, format_mesh_point_vector(points, "spline_curve"), error);
+  if (!success) {
+    printf("error exporting spline curve %s: %s\n", filename.c_str(),
+        error.c_str());
+    return false;
+  }
+
+  printf("exported current spline curve with %zu mesh points to %s\n",
+      points.size(), filename.c_str());
+  return true;
+}
+
 inline bool is_pressing(const gui_input& input, gui_key key) {
   return is_pressing(input.key_buttons[(int)key]);
 }
@@ -865,6 +939,10 @@ void draw(const gui_input& input, void* data) {
     //              app.bezier_params, app.error))
     //        print_fatal(app.error);
     // TODO(giacomo): restore loading tests
+  }
+  draw_textinput(widget, "spline export", app.spline_export_filename);
+  if (draw_button(widget, "Export Curve")) {
+    export_current_spline_curve(app, app.spline_export_filename);
   }
   if (draw_checkbox(widget, "Show Gradient", app.show_gradient)) {
     app.vector_field.resize(app.mesh.positions.size(), zero3f);

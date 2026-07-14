@@ -258,6 +258,7 @@ struct App {
   bezier_params bezier_params = {};
   string        filename      = "data/mesh.obj";
   string        testname      = "tests/loop-bunny.json";
+  string        spline_export_filename = "tests/current_spline_curve.txt";
   string        comparison    = "mesh";
   string        scene_name    = "data/mesh.obj_gamma";
 
